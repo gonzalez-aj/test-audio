@@ -1,8 +1,8 @@
 {
-  "name": "next-firebase-starter",
+  "name": "test-audio",
   "private": true,
   "version": "1.0.0",
-  "author": "Trinity Christiana",
+  "author": "Angie GOnzalez",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
