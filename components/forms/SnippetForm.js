@@ -6,7 +6,7 @@ import Form from 'react-bootstrap/Form';
 import { Button } from 'react-bootstrap';
 import Head from 'next/head';
 import { useAuth } from '../../utils/context/authContext';
-import createSnippet, { updateSnippet } from '../../api/snippetData';
+import { createSnippet, updateSnippet } from '../../api/snippetData';
 import { storage } from '../../utils/client';
 
 // these have to match the name "" in the form input
@@ -14,10 +14,8 @@ const initialState = {
   firebaseKey: '',
   title: '',
   description: '',
-  keyOf: '',
   isPublic: false,
   favorite: false,
-
 };
 
 function SnippetForm({ obj }) {
@@ -26,19 +24,19 @@ function SnippetForm({ obj }) {
   const { user } = useAuth();
   const [audio, setAudio] = useState(null);
   const [audioUrl, setAudioUrl] = useState('');
-  const delay = (ms) => new Promise((res) => setTimeout(res, ms));
   const didMount = React.useRef(false);
   const [snippetBpm, setSnippetBpm] = useState(40);
+  const [snippetKeyOf, setSnippetKeyOf] = useState('C Major');
 
   useEffect(() => {
     if (obj.firebaseKey) setFormInput(obj);
   }, [obj, user]);
   useEffect(() => {
     if (didMount.current) {
-      const uploadTask = () => { storage.ref(`audio/${audio?.name}`).put(audio); };
-      uploadTask();
+      const uploadTask = async () => storage.ref(`audio/${audio.name}`).put(audio);
       const delayFunction = async () => {
-        await delay(9000);
+        // eslint-disable-next-line no-unused-vars
+        const delayingUploadTask = await uploadTask();
         storage.ref('audio').child(audio.name).getDownloadURL().then((url) => {
           setAudioUrl(url);
         });
@@ -61,7 +59,11 @@ function SnippetForm({ obj }) {
 
   const changeBPM = (e) => {
     setSnippetBpm(e.target.value);
-  }
+  };
+
+  const changeKey = (e) => {
+    setSnippetKeyOf(e.target.value);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -69,7 +71,9 @@ function SnippetForm({ obj }) {
       updateSnippet(formInput)
         .then(() => router.push(`/snippet/${obj.firebaseKey}`));
     } else {
-      const payload = { ...formInput, uid: user.uid, audio_url: `${audioUrl}` };
+      const payload = {
+        ...formInput, uid: user.uid, audio_url: `${audioUrl}`, bpm: snippetBpm, keyOf: snippetKeyOf,
+      };
       createSnippet(payload).then(({ name }) => {
         const patchPayloadFBK = { firebaseKey: name };
         updateSnippet(patchPayloadFBK).then(() => {
@@ -140,6 +144,28 @@ function SnippetForm({ obj }) {
           <output htmlFor="fader" />
         </FloatingLabel>
 
+        {/* keyOf SELECT */}
+        <div className="">Select Key</div>
+        <FloatingLabel controlId="floatingSelect" label="Key of">
+          <Form.Select
+            placeholder="Pick a Major Key"
+            aria-label="Key"
+            name="keyOf"
+            onChange={changeKey}
+            className="mb-3"
+            value={snippetKeyOf}
+            required
+          >
+            <option value="A Major">A Major</option>
+            <option value="B Major">B Major</option>
+            <option value="C Major">C Major</option>
+            <option value="D Major">D Major</option>
+            <option value="E Major">E Major</option>
+            <option value="F Major">F Major</option>
+            <option value="G Major">G Major</option>
+          </Form.Select>
+        </FloatingLabel>
+
         {/* isPublic: TOGGLES/RADIOS */}
         <Form.Check
           className="mb-3"
@@ -156,6 +182,21 @@ function SnippetForm({ obj }) {
           }}
         />
 
+        <Form.Check
+          className="mb-3"
+          type="switch"
+          id="favorite"
+          name="favorite"
+          label="Favorite?"
+          checked={formInput.favorite}
+          onChange={(e) => {
+            setFormInput((prevState) => ({
+              ...prevState,
+              favorite: e.target.checked,
+            }));
+          }}
+        />
+
         {/* SUBMIT BUTTON  */}
         <Button variant="outline-dark" className="m-2 text-color-drkblu" type="submit">{obj.firebaseKey ? 'Update' : 'Create'} Snippet</Button>
       </Form>
@@ -167,7 +208,10 @@ SnippetForm.propTypes = {
   obj: PropTypes.shape({
     title: PropTypes.string,
     description: PropTypes.string,
+    bpm: PropTypes.number,
+    keyOf: PropTypes.string,
     isPublic: PropTypes.bool,
+    favorite: PropTypes.bool,
     firebaseKey: PropTypes.string,
   }),
 };
