@@ -25,6 +25,13 @@ export default function NavBar() {
                 </a>
               </Link>
             </li>
+            <li className="nav-item">
+              <Link passHref href="/snippet/new">
+                <a className="nav-link">
+                  Add Snippet
+                </a>
+              </Link>
+            </li>
             <button type="button" className="btn btn-danger" onClick={signOut}>
               Sign Out
             </button>
